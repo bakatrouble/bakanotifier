@@ -36,6 +36,14 @@
         "type": "string"
       }
     },
+    "endpoints": {
+      "description": "Extra POST routes; each renders a fixed template from the whole request body.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EndpointConfig"
+      },
+      "default": []
+    },
     "otlp": {
       "$ref": "#/$defs/OtlpConfig",
       "default": {
@@ -50,6 +58,33 @@
     "api_secrets"
   ],
   "$defs": {
+    "EndpointConfig": {
+      "description": "A custom POST route. The request body is used as the template `values`.",
+      "type": "object",
+      "properties": {
+        "path": {
+          "description": "URL path starting with `/`, for example `/alerts`.",
+          "type": "string"
+        },
+        "template": {
+          "description": "Template name, without the extension, rendered for every request.",
+          "type": "string"
+        },
+        "chat_id": {
+          "description": "Chat id for this endpoint; defaults to default_chat_id when omitted.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "int64"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "template"
+      ]
+    },
     "OtlpConfig": {
       "type": "object",
       "properties": {

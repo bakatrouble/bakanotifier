@@ -57,9 +57,26 @@ pub struct Config {
     pub telegram_api_url: String,
     #[clapfig(default = [])]
     pub api_secrets: Vec<String>,
+    /// Extra POST routes; each renders a fixed template from the whole request body.
+    #[schemars(default)]
+    pub endpoints: Vec<EndpointConfig>,
     #[schemars(default)]
     pub otlp: OtlpConfig,
 }
+
+/// A custom POST route. The request body is used as the template `values`.
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, clapfig::Schema)]
+#[schemars(deny_unknown_fields)]
+pub struct EndpointConfig {
+    /// URL path starting with `/`, for example `/alerts`.
+    pub path: String,
+    /// Template name, without the extension, rendered for every request.
+    pub template: String,
+    /// Chat id for this endpoint; defaults to default_chat_id when omitted.
+    pub chat_id: Option<i64>,
+}
+
+const RESERVED_PATHS: [&str; 2] = ["/health", "/notify"];
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, clapfig::Schema)]
 #[schemars(deny_unknown_fields)]
@@ -107,11 +124,57 @@ impl Config {
                 self.templates_dir.display()
             );
         }
+        self.validate_endpoints()?;
         if self.otlp.service_name.trim().is_empty() {
             bail!("otlp.service_name must not be empty");
         }
         if !(0.0..=1.0).contains(&self.otlp.sampling_ratio) {
             bail!("otlp.sampling_ratio must be between 0.0 and 1.0");
+        }
+        Ok(())
+    }
+
+    fn validate_endpoints(&self) -> Result<()> {
+        let mut seen = std::collections::HashSet::new();
+        for endpoint in &self.endpoints {
+            let path = endpoint.path.as_str();
+            if !path.starts_with('/') || path.len() < 2 {
+                bail!("endpoint path {path:?} must start with / and name a segment");
+            }
+            if path.contains(['{', '}', '*', ':', '?', '#']) || path.ends_with('/') {
+                bail!("endpoint path {path:?} must be a literal path without wildcards or query");
+            }
+            if RESERVED_PATHS.contains(&path) {
+                bail!("endpoint path {path:?} is reserved");
+            }
+            if !seen.insert(path) {
+                bail!("endpoint path {path:?} is defined more than once");
+            }
+            // Same name rule as the runtime template loader; kept here because
+            // build.rs compiles this file without the rest of the crate.
+            let name_ok = !endpoint.template.is_empty()
+                && endpoint
+                    .template
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+            if !name_ok {
+                bail!(
+                    "endpoint {path} template name {:?} must match ^[A-Za-z0-9_-]+$",
+                    endpoint.template
+                );
+            }
+            let exists = ["yaml", "yml"].iter().any(|ext| {
+                self.templates_dir
+                    .join(format!("{}.{ext}", endpoint.template))
+                    .is_file()
+            });
+            if !exists {
+                bail!(
+                    "endpoint {path} template {:?} not found in {}",
+                    endpoint.template,
+                    self.templates_dir.display()
+                );
+            }
         }
         Ok(())
     }
@@ -130,6 +193,7 @@ mod tests {
             templates_dir: Path::new(env!("CARGO_MANIFEST_DIR")).join("templates"),
             telegram_api_url: "https://api.telegram.org".to_string(),
             api_secrets: vec!["change-me".to_string()],
+            endpoints: Vec::new(),
             otlp: OtlpConfig::default(),
         }
     }
@@ -161,6 +225,47 @@ mod tests {
         config.templates_dir = "/nonexistent/bakanotifier-templates".into();
         let err = config.validate().unwrap_err();
         assert!(err.to_string().contains("templates_dir"));
+    }
+
+    fn with_endpoint(path: &str, template: &str) -> Config {
+        let mut config = config();
+        config.endpoints = vec![EndpointConfig {
+            path: path.to_string(),
+            template: template.to_string(),
+            chat_id: None,
+        }];
+        config
+    }
+
+    #[test]
+    fn accepts_valid_endpoint() {
+        with_endpoint("/alerts", "text")
+            .validate()
+            .expect("endpoint should be valid");
+    }
+
+    #[test]
+    fn rejects_bad_endpoint_paths() {
+        for path in ["alerts", "/", "/a/", "/notify", "/health", "/x/{id}", "/a*"] {
+            let err = with_endpoint(path, "text").validate().unwrap_err();
+            assert!(err.to_string().contains("endpoint path"), "{path}: {err}");
+        }
+    }
+
+    #[test]
+    fn rejects_duplicate_endpoint_paths() {
+        let mut config = with_endpoint("/alerts", "text");
+        config.endpoints.push(config.endpoints[0].clone());
+        let err = config.validate().unwrap_err();
+        assert!(err.to_string().contains("more than once"));
+    }
+
+    #[test]
+    fn rejects_missing_endpoint_template() {
+        let err = with_endpoint("/alerts", "nope").validate().unwrap_err();
+        assert!(err.to_string().contains("not found"));
+        let err = with_endpoint("/alerts", "../etc").validate().unwrap_err();
+        assert!(err.to_string().contains("must match"));
     }
 
     #[test]

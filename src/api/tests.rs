@@ -20,6 +20,7 @@ fn state(default_chat_id: Option<i64>) -> AppState {
         templates_dir: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates"),
         telegram_api_url: "http://127.0.0.1:1".to_string(),
         api_secrets: vec!["change-me".to_string()],
+        endpoints: Vec::new(),
         otlp: crate::config::OtlpConfig::default(),
     };
     AppState::new(config, shared_health())

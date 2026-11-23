@@ -72,6 +72,7 @@ fn test_config(telegram_api_url: String) -> Config {
         templates_dir: PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates"),
         telegram_api_url,
         api_secrets: vec![API_SECRET.to_string()],
+        endpoints: Vec::new(),
         otlp: bakanotifier::config::OtlpConfig::default(),
     }
 }

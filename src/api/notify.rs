@@ -9,6 +9,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use tracing::{Instrument, info, warn};
 
+use crate::config::EndpointConfig;
 use crate::parsing::{parse_json_value, parse_yaml_value};
 use crate::telegram::SendError;
 
@@ -75,6 +76,30 @@ pub(super) async fn notify(
     headers: HeaderMap,
     body: Result<Bytes, BytesRejection>,
 ) -> Response {
+    handle(state, headers, body, Source::Request).await
+}
+
+/// Handles a configured endpoint: preset template and chat id, whole body as values.
+pub(super) async fn endpoint_notify(
+    state: Arc<AppState>,
+    headers: HeaderMap,
+    body: Result<Bytes, BytesRejection>,
+    endpoint: EndpointConfig,
+) -> Response {
+    handle(state, headers, body, Source::Endpoint(endpoint)).await
+}
+
+enum Source {
+    Request,
+    Endpoint(EndpointConfig),
+}
+
+async fn handle(
+    state: Arc<AppState>,
+    headers: HeaderMap,
+    body: Result<Bytes, BytesRejection>,
+    route: Source,
+) -> Response {
     if !is_authorized(&headers, &state.config.api_secrets) {
         return error_response(StatusCode::UNAUTHORIZED, "missing or invalid bearer token");
     }
@@ -105,11 +130,18 @@ pub(super) async fn notify(
             );
         }
     };
-    let request: NotifyRequest = match serde_json::from_value(value) {
-        Ok(request) => request,
-        Err(error) => {
-            return error_response(StatusCode::BAD_REQUEST, error.to_string());
-        }
+    let request: NotifyRequest = match route {
+        Source::Request => match serde_json::from_value(value) {
+            Ok(request) => request,
+            Err(error) => {
+                return error_response(StatusCode::BAD_REQUEST, error.to_string());
+            }
+        },
+        Source::Endpoint(endpoint) => NotifyRequest {
+            chat_id: endpoint.chat_id,
+            template: endpoint.template,
+            values: value,
+        },
     };
 
     let log_chat_id = request.chat_id.or(state.config.default_chat_id);

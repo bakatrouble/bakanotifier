@@ -7,6 +7,12 @@ templates_dir = "templates"
 telegram_api_url = "https://api.telegram.org"
 api_secrets = ["change-me"]
 
+# Custom POST routes: the body is the template values, and template/chat are fixed.
+# [[endpoints]]
+# path = "/docker-updates"
+# template = "docker-updates"
+# chat_id = 123456789
+
 # OTLP export is disabled unless an endpoint is set here or through
 # OTEL_EXPORTER_OTLP_ENDPOINT.
 # [otlp]
