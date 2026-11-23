@@ -1,0 +1,5 @@
+{
+  "title": "Disk alert",
+  "items": ["sda 97%", "sdb 12%"],
+  "urgent": true
+}

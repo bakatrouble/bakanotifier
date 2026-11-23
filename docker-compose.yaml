@@ -1,0 +1,21 @@
+services:
+  bakanotifier:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.toml:/etc/bakanotifier/config.toml:ro
+      - ./templates:/etc/bakanotifier/templates:ro
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+      OTEL_SERVICE_NAME: "bakanotifier"
+    depends_on:
+      - otel-collector
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/bakanotifier", "healthcheck", "--address", "127.0.0.1:8080"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

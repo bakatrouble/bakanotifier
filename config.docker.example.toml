@@ -1,0 +1,15 @@
+#:schema ./schemas/config.schema.json
+
+listen = "0.0.0.0:8080"
+bot_token = "123456:ABC-DEF"
+default_chat_id = 123456789
+templates_dir = "/etc/bakanotifier/templates"
+telegram_api_url = "https://api.telegram.org"
+api_secrets = ["change-me"]
+
+# OTLP export is disabled unless an endpoint is set here or through
+# OTEL_EXPORTER_OTLP_ENDPOINT.
+# [otlp]
+# endpoint = "http://otel-collector:4318"
+# service_name = "bakanotifier"
+# sampling_ratio = 1.0

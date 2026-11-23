@@ -1,0 +1,36 @@
+mode: rich_blocks
+blocks:
+  - type: heading
+    text: "${title}"
+    size: 1
+  - type: paragraph
+    text: "A paragraph rendered with ${title}."
+  - type: list
+    items:
+      $map:
+        $eval: items
+      each(item):
+        blocks:
+          - type: paragraph
+            text: "${item}"
+  - $if: footer
+    then:
+      type: footer
+      text: "${footer}"
+  - type: divider
+
+values:
+  type: object
+  properties:
+    title:
+      type: string
+    items:
+      type: array
+      items:
+        type: string
+    footer:
+      type: string
+  required:
+    - title
+    - items
+  additionalProperties: false

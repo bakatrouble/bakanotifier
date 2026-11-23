@@ -1,0 +1,5 @@
+{
+  "title": "Rich blocks example",
+  "items": ["first item", "second item"],
+  "footer": "Generated from JSON-e"
+}

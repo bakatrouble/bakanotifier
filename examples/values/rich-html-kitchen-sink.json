@@ -1,0 +1,6 @@
+{
+  "title": "Rich HTML kitchen sink",
+  "items": ["First item", "Second item"],
+  "note": "Optional note for the aside",
+  "skip_entity_detection": true
+}

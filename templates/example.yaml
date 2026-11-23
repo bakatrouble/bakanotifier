@@ -1,0 +1,33 @@
+mode: rich_html
+text:
+  $let:
+    header: "<b>${title}</b>"
+    lines:
+      $map:
+        $eval: items
+      each(item): "- ${item}"
+  in:
+    $if: len(lines)
+    then:
+      $eval: "header + '\n' + join(lines, '\n')"
+    else:
+      $eval: header
+skip_entity_detection:
+  $if: urgent
+  then: true
+
+values:
+  type: object
+  properties:
+    title:
+      type: string
+    items:
+      type: array
+      items:
+        type: string
+    urgent:
+      type: boolean
+  required:
+    - title
+    - items
+  additionalProperties: false

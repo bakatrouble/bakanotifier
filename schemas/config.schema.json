@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Config",
+  "type": "object",
+  "properties": {
+    "listen": {
+      "description": "May be omitted; defaults to 0.0.0.0:8080, or override with --listen.",
+      "type": "string",
+      "default": "0.0.0.0:8080"
+    },
+    "bot_token": {
+      "description": "May be omitted when provided with --bot-token; the merged value must be non-empty.",
+      "type": "string",
+      "default": ""
+    },
+    "default_chat_id": {
+      "description": "May be provided with --default-chat-id.",
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "int64"
+    },
+    "templates_dir": {
+      "description": "May be omitted; defaults to templates, or override with --templates-dir.",
+      "type": "string",
+      "default": ""
+    },
+    "telegram_api_url": {
+      "type": "string",
+      "default": "https://api.telegram.org"
+    },
+    "api_secrets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "otlp": {
+      "$ref": "#/$defs/OtlpConfig",
+      "default": {
+        "endpoint": null,
+        "service_name": "bakanotifier",
+        "sampling_ratio": 1.0
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "api_secrets"
+  ],
+  "$defs": {
+    "OtlpConfig": {
+      "type": "object",
+      "properties": {
+        "endpoint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "service_name": {
+          "type": "string",
+          "default": "bakanotifier"
+        },
+        "sampling_ratio": {
+          "type": "number",
+          "format": "double",
+          "default": 1.0
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

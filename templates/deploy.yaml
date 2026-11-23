@@ -1,0 +1,31 @@
+mode: rich_html
+text:
+  $if: failed
+  then: "<b>Deploy failed</b>: ${service} ${version}\n<i>${reason}</i>"
+  else: "<b>Deploy succeeded</b>: ${service} ${version}"
+
+values:
+  type: object
+  properties:
+    service:
+      type: string
+    version:
+      type: string
+    failed:
+      type: boolean
+    reason:
+      type: string
+  required:
+    - service
+    - version
+    - failed
+  additionalProperties: false
+  if:
+    properties:
+      failed:
+        const: true
+    required:
+      - failed
+  then:
+    required:
+      - reason

@@ -1,0 +1,80 @@
+mode: rich_html
+text:
+  $let:
+    item_lines:
+      $map:
+        $eval: items
+      each(item): <li>${item}</li>
+    note_block:
+      $if: note
+      then: <aside>${note}<cite>The Author</cite></aside>
+      else: ''
+  in: |-
+    <h1>${title}</h1>
+    <h2>Inline formatting</h2>
+    <p><b>bold</b> <strong>strong</strong> <i>italic</i> <em>emphasis</em> <u>underline</u> <ins>inserted</ins> <s>strike</s> <strike>strike</strike> <del>deleted</del> <code>inline code</code> <mark>marked</mark> <sub>subscript</sub> <sup>superscript</sup> <tg-spoiler>spoiler</tg-spoiler></p>
+    <p><a href="https://t.me/">external link</a> <a href="mailto:user@example.com">mailto link</a> <a href="tel:+123456789">phone link</a> <a href="tg://user?id=123456789">user mention</a> <a href="#chapter-1">in-document link</a> <a href="#note-1">reference link</a></p>
+    <a name="chapter-1"></a>
+    <tg-reference name="note-1">Referenced text</tg-reference>
+    <p><tg-emoji emoji-id="5368324170671202286">custom emoji</tg-emoji> <tg-time unix="1647531900" format="wDT">22:45 tomorrow</tg-time> <tg-math>x^2 + y^2</tg-math></p>
+    <p>#hashtag $USD +12345678901, card: 4242 4242 4242 4242, https://t.me t.me a@t.me /command @username</p>
+    <h3>Heading 3</h3>
+    <h4>Heading 4</h4>
+    <h5>Heading 5</h5>
+    <h6>Heading 6</h6>
+    <p>Paragraph text</p>
+    <pre>pre-formatted block</pre>
+    <pre><code class="language-python">print('rich html')</code></pre>
+    <footer>Footer text</footer>
+    <hr/>
+    <ul>${join(item_lines, '')}</ul>
+    <ul><li><input type="checkbox" checked>Checked checkbox</li><li><input type="checkbox">Unchecked checkbox</li></ul>
+    <ol start="3" type="a" reversed><li>ordered list item</li></ol>
+    <ol><li value="7" type="i">ordered item with explicit number</li></ol>
+    <blockquote>Block quotation started<br>continued<cite>The Author</cite></blockquote>
+    <blockquote expandable>Expandable quotation<br>continued<br>last line<cite>The Author</cite></blockquote>
+    ${note_block}
+    <img src="https://telegram.org/example/photo.jpg"/>
+    <video src="https://telegram.org/example/video.mp4"></video>
+    <audio src="https://telegram.org/example/audio.mp3"></audio>
+    <audio src="https://telegram.org/example/audio.ogg"></audio>
+    <video src="https://telegram.org/example/animation.gif"></video>
+    <tg-document src="https://telegram.org/example/document.zip"></tg-document>
+    <figure><img src="https://telegram.org/example/photo.jpg" tg-spoiler/><figcaption>Photo caption<cite>Photo credit</cite></figcaption></figure>
+    <figure><video src="https://telegram.org/example/video.mp4" tg-spoiler></video><figcaption>Video caption</figcaption></figure>
+    <figure><audio src="https://telegram.org/example/audio.mp3"></audio><figcaption>Audio caption</figcaption></figure>
+    <figure><audio src="https://telegram.org/example/audio.ogg"></audio><figcaption>Voice note caption</figcaption></figure>
+    <figure><video src="https://telegram.org/example/animation.gif" tg-spoiler></video><figcaption>Animation caption</figcaption></figure>
+    <figure><tg-document src="https://telegram.org/example/document.zip"></tg-document><figcaption>Document caption</figcaption></figure>
+    <tg-map lat="41.9" long="12.5" zoom="14"/>
+    <figure><tg-map lat="41.9" long="12.5" zoom="14"/><figcaption>Map caption</figcaption></figure>
+    <tg-collage><img src="https://telegram.org/example/photo.jpg"/><video src="https://telegram.org/example/video.mp4"/><figcaption>Collage caption<cite>The Author</cite></figcaption></tg-collage>
+    <tg-slideshow><img src="https://telegram.org/example/photo.jpg"/><video src="https://telegram.org/example/video.mp4"/><figcaption>Slideshow caption</figcaption></tg-slideshow>
+    <table bordered striped compact><caption>Table caption</caption><tr><th>Header 1</th><th>Header 2</th></tr><tr><td colspan="2" rowspan="2" align="left">Value</td><td align="center">Value2</td><td align="right">Value3</td></tr><tr><td valign="top">Value4</td><td valign="middle">Value5</td><td valign="bottom">Value6</td></tr></table>
+    <details><summary>Closed details</summary>Closed details content.</details>
+    <details open><summary>Open details</summary>Open details content.</details>
+    <tg-math-block>E = mc^2</tg-math-block>
+    <tg-button-row align="left"><tg-button type="url" url="https://t.me">url</tg-button><tg-button type="callback_data" style="link" data="callback">callback</tg-button><tg-button type="web_app" style="danger" url="https://telegram.org">mini app</tg-button></tg-button-row>
+    <tg-button-row align="center"><tg-button type="login_url" url="https://t.me" forward-text="forward text" request-write-access>login</tg-button><tg-button type="switch_inline_query" style="primary" query="inline">inline</tg-button></tg-button-row>
+    <tg-button-row><tg-button type="copy_text" text="...copy">Copy</tg-button><tg-button type="disabled">Disabled</tg-button></tg-button-row>
+skip_entity_detection:
+  $if: skip_entity_detection
+  then: true
+
+values:
+  type: object
+  properties:
+    title:
+      type: string
+    items:
+      type: array
+      items:
+        type: string
+    note:
+      type: string
+    skip_entity_detection:
+      type: boolean
+  required:
+    - title
+    - items
+  additionalProperties: false

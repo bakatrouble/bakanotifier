@@ -1,0 +1,107 @@
+mode: rich_markdown
+text:
+  $let:
+    item_lines:
+      $map:
+        $eval: items
+      each(item): '- ${item}'
+    note_block:
+      $if: note
+      then: '> ${note}'
+      else: ''
+  in: |-
+    # ${title}
+    ## Inline formatting
+    **bold** __bold__ *italic* _italic_ ~~strikethrough~~ `inline code` ==marked== ||spoiler||
+    [inline URL](https://t.me/) [inline e-mail](mailto:user@example.com) [inline phone](tel:+123456789) [inline mention](tg://user?id=123456789)
+    ![custom emoji](tg://emoji?id=5368324170671202286) ![22:45 tomorrow](tg://time?unix=1647531900&format=wDT)
+    $x^2 + y^2$ and $$E = mc^2$$
+    \#hashtag $USD +12345678901, card: 4242 4242 4242 4242, https://t.me t.me a@t.me /command @username
+    ### Heading 3
+    #### Heading 4
+    ##### Heading 5
+    ###### Heading 6
+    Paragraph text
+    ```python
+    print('rich markdown')
+    ```
+    ---
+    - Unordered item
+    ${join(item_lines, '
+    ')}
+    1. Ordered item
+    2. Ordered item
+    - [ ] Task list item
+    - [x] Completed task list item
+    > Block quotation started
+    >
+    > Block quotation continued
+    ![](https://telegram.org/example/photo.jpg)
+    ![](https://telegram.org/example/video.mp4)
+    ![](https://telegram.org/example/audio.mp3)
+    ![](https://telegram.org/example/audio.ogg)
+    ![](https://telegram.org/example/animation.gif)
+    ![](https://telegram.org/example/document.zip)
+    ![](https://telegram.org/example/photo.jpg "Photo caption")
+    ![](https://telegram.org/example/video.mp4 "Video caption")
+    ![](https://telegram.org/example/audio.mp3 "Audio caption")
+    ![](https://telegram.org/example/audio.ogg "Voice note caption")
+    ![](https://telegram.org/example/animation.gif "Animation caption")
+    ![](https://telegram.org/example/document.zip "Document caption")
+    | Header 1 | Header 2 |
+    |:---------|:--------:|
+    | left | center |
+    Text with a reference[^id1].
+    [^id1]: Definition of the first footnote.
+    ```math
+    E = mc^2
+    ```
+    ## Example Nested Syntax Report for _Q1_
+    Intro with <u>underlined text</u>, ==marked text==, and $x^2 + y^2$.
+    **Bold _italic <u>underlined italic bold</u> italic_ bold**
+    <u>In inline tags, nested **markdown** is parsed</u>
+    >Quote with **bold text, ~~strikethrough, and <tg-spoiler>spoiler</tg-spoiler>~~**, plus [a link](https://t.me/).
+    - List item with `code`, <sup>superscript</sup>, <sub>subscript</sub>, and a footnote[^note]
+    [^note]: Footnote with _italic text_ and <u>HTML underline</u>.
+    <a name="chapter-1"></a>
+    [jump to chapter](#chapter-1)
+    <aside>Pull quote<cite>The Author</cite></aside>
+    <tg-map lat="41.9" long="12.5" zoom="14"/>
+    # Details blocks can contain Markdown content:
+    <details open><summary>Summary with **bold text**</summary>
+    ### Details heading
+    - List item with _italic text_
+    </details>
+    # Collages and slideshows can contain Markdown media blocks:
+    <tg-collage>
+    ![](https://telegram.org/example/photo.jpg)
+    ![](https://telegram.org/example/video.mp4)
+    </tg-collage>
+    <tg-slideshow>
+    ![](https://telegram.org/example/photo.jpg)
+    ![](https://telegram.org/example/video.mp4)
+    </tg-slideshow>
+    <p>Inline buttons: <tg-button type="url" style="success" url="https://t.me">url</tg-button> <tg-button type="callback_data" style="link" data="callback">callback</tg-button> <tg-button type="web_app" style="danger" url="https://telegram.org">mini app</tg-button></p>
+    <tg-button-row align="right"><tg-button type="login_url" url="https://t.me" forward-text="forward text" request-write-access>login</tg-button><tg-button type="switch_inline_query" query="inline">inline</tg-button><tg-button type="copy_text" text="...copy">Copy</tg-button><tg-button type="disabled" style="primary">Disabled</tg-button></tg-button-row>
+    ${note_block}
+skip_entity_detection:
+  $if: skip_entity_detection
+  then: true
+
+values:
+  type: object
+  properties:
+    title:
+      type: string
+    items:
+      type: array
+      items:
+        type: string
+    note:
+      type: string
+    skip_entity_detection:
+      type: boolean
+  required:
+    - title
+    - items
+  additionalProperties: false

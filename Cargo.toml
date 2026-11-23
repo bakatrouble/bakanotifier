@@ -1,0 +1,49 @@
+[package]
+name = "bakanotifier"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.105"
+axum = "0.8.9"
+clap = { version = "4.6.9", features = ["derive"] }
+clapfig = "0.26"
+frankenstein = { version = "0.53.0", default-features = false, features = ["client-reqwest", "trait-async"] }
+json-e = "4.8"
+jsonschema = "=0.63.1"
+opentelemetry = "0.33"
+opentelemetry-otlp = { version = "0.33", default-features = false, features = ["http-proto", "reqwest-client", "trace"] }
+opentelemetry_sdk = { version = "0.33", features = ["rt-tokio", "experimental_trace_batch_span_processor_with_async_runtime"] }
+schemars = "1.2.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde-saphyr = "2"
+serde_json = "1.0.154"
+tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "sync", "time"] }
+toml = "0.8"
+tracing = "0.1.44"
+tracing-opentelemetry = "0.34"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+
+[dev-dependencies]
+opentelemetry_sdk = { version = "0.33", features = ["testing"] }
+temp-env = "0.3.6"
+tower = { version = "0.5.3", features = ["util"] }
+
+[build-dependencies]
+anyhow = "1"
+clapfig = { version = "0.26", features = ["derive"] }
+schemars = "1.2.3"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+
+[lints.clippy]
+unwrap_used = "warn"
+expect_used = "warn"
+dbg_macro = "warn"
+todo = "warn"
+unimplemented = "warn"
+pedantic = { level = "warn", priority = -1 }
+# Documentation-only pedantic lints are not enforced.
+doc_markdown = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"

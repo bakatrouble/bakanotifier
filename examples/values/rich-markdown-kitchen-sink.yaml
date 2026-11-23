@@ -1,0 +1,6 @@
+title: Rich Markdown kitchen sink
+items:
+  - First item
+  - Second item
+note: Optional note for the footer
+skip_entity_detection: true
