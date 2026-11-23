@@ -3,7 +3,7 @@
 listen = "0.0.0.0:8080"
 bot_token = "123456:ABC-DEF"
 default_chat_id = 123456789
-templates_dir = "/etc/bakanotifier/templates"
+templates_dir = "/templates"
 telegram_api_url = "https://api.telegram.org"
 api_secrets = ["change-me"]
 

@@ -158,16 +158,16 @@ binary, templates and an example config. It exposes port `8080`.
 docker build -t bakanotifier:local .
 ```
 
-The container reads `/etc/bakanotifier/config.toml` by default, and templates
-are expected at `/etc/bakanotifier/templates` (see
+The container reads `/config/config.toml` by default, and templates
+are expected at `/templates` (see
 `config.docker.example.toml`):
 
 ```sh
 cp config.docker.example.toml config.toml
 # edit config.toml with a placeholder token and secret
 docker run --rm -p 8080:8080 \
-  -v "$PWD/config.toml:/etc/bakanotifier/config.toml:ro" \
-  -v "$PWD/templates:/etc/bakanotifier/templates:ro" \
+  -v "$PWD/config.toml:/config/config.toml:ro" \
+  -v "$PWD/templates:/templates:ro" \
   bakanotifier:local
 ```
 
