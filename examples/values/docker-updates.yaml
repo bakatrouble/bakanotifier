@@ -1,0 +1,13 @@
+updates:
+  - stack: homelab-media
+    image: jellyfin/jellyfin:10.10.3
+    old_version: 10.10.3
+    new_version: 10.10.4
+  - stack: forgejo
+    image: codeberg.org/forgejo/forgejo:11.0.2
+    old_version: 11.0.2
+    new_version: 11.0.3
+  - stack: monitoring
+    image: grafana/grafana:11.4.0
+    old_version: 11.4.0
+    new_version: 11.5.1

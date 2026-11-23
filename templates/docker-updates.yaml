@@ -1,0 +1,35 @@
+mode: rich_html
+text:
+  $let:
+    lines:
+      $map:
+        $eval: updates
+      each(u): "<details><summary>${u.stack}</summary><code>${u.image}</code><br/><code>${u.old_version}</code> → <code>${u.new_version}</code></details>"
+  in:
+    $eval: "'<b>Image updates available (' + str(len(lines)) + ')</b>\n<hr/>\n' + join(lines, '\n') + '\n<hr/>\n<i>Sent by image-watch</i>'"
+
+values:
+  type: object
+  properties:
+    updates:
+      type: array
+      items:
+        type: object
+        properties:
+          stack:
+            type: string
+          image:
+            type: string
+          old_version:
+            type: string
+          new_version:
+            type: string
+        required:
+          - stack
+          - image
+          - old_version
+          - new_version
+        additionalProperties: false
+  required:
+    - updates
+  additionalProperties: false
