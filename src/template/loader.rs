@@ -6,6 +6,7 @@ use serde_json::Value;
 use super::error::TemplateError;
 use super::model::RichTemplate;
 
+#[must_use]
 pub fn is_valid_template_name(name: &str) -> bool {
     !name.is_empty()
         && name

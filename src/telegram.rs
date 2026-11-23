@@ -14,6 +14,7 @@ pub struct TelegramClient {
 }
 
 impl TelegramClient {
+    #[must_use]
     pub fn from_config(config: &Config) -> Self {
         let base = config.telegram_api_url.trim_end_matches('/');
         let api_url = format!("{base}/bot{}", config.bot_token);
@@ -48,7 +49,7 @@ impl TelegramClient {
         let span = tracing::info_span!(
             "telegram.send_message",
             chat_id,
-            parse_mode = parse_mode.map(ParseMode::to_str).unwrap_or("none"),
+            parse_mode = parse_mode.map_or("none", ParseMode::to_str),
             error = tracing::field::Empty,
             otel.status_code = tracing::field::Empty,
         );

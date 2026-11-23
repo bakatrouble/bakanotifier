@@ -14,7 +14,7 @@ impl Extractor for HeaderExtractor<'_> {
     }
 
     fn keys(&self) -> Vec<&str> {
-        self.0.keys().map(|key| key.as_str()).collect()
+        self.0.keys().map(axum::http::HeaderName::as_str).collect()
     }
 }
 

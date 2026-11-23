@@ -32,6 +32,7 @@ pub struct RichTemplate {
 }
 
 impl TemplateMode {
+    #[must_use]
     pub fn is_rich(self) -> bool {
         matches!(self, Self::RichHtml | Self::RichMarkdown | Self::RichBlocks)
     }
@@ -48,6 +49,7 @@ pub enum RenderedMessage {
 }
 
 impl RenderedMessage {
+    #[must_use]
     pub fn method(&self) -> &'static str {
         match self {
             Self::Message { .. } => "sendMessage",
@@ -56,6 +58,7 @@ impl RenderedMessage {
     }
 
     /// Build the payload shown by the local example's dry-run mode.
+    #[must_use]
     pub fn payload(&self, chat_id: Option<i64>) -> Value {
         let mut payload = json!({"method": self.method()});
         if let Some(chat_id) = chat_id {

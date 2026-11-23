@@ -17,8 +17,7 @@ async fn main() -> anyhow::Result<()> {
     if let Some(("healthcheck", subcommand)) = matches.subcommand() {
         let address = subcommand
             .get_one::<String>("address")
-            .map(String::as_str)
-            .unwrap_or("127.0.0.1:8080");
+            .map_or("127.0.0.1:8080", String::as_str);
         return run_healthcheck(address).await;
     }
 

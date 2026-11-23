@@ -60,6 +60,7 @@ fn parse_chat_id(value: &str) -> Result<i64, String> {
 }
 
 impl Opts {
+    #[must_use]
     pub fn config_path(&self) -> &Path {
         &self.config
     }

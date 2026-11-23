@@ -21,6 +21,7 @@ pub struct BotHealth {
 
 pub type SharedHealth = Arc<Mutex<BotHealth>>;
 
+#[must_use]
 pub fn shared_health() -> SharedHealth {
     Arc::new(Mutex::new(BotHealth::default()))
 }
@@ -28,8 +29,7 @@ pub fn shared_health() -> SharedHealth {
 fn unix_now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs())
-        .unwrap_or(0)
+        .map_or(0, |duration| duration.as_secs())
 }
 
 /// Calls getMe immediately and then every HEALTH_CHECK_INTERVAL, recording the
@@ -76,6 +76,7 @@ pub async fn poll_bot_health(
 /// "ok" needs the latest check to have succeeded and that success to be
 /// recent, so a failed check reads as down at once and a stalled poller reads
 /// as down too.
+#[must_use]
 pub fn health_response(health: &BotHealth) -> (StatusCode, Value) {
     let fresh = health.last_error.is_none()
         && health.last_ok.is_some_and(|time| {
