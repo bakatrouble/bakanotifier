@@ -36,6 +36,8 @@ COPY config.docker.example.toml /config/config.example.toml
 WORKDIR /app
 EXPOSE 8080
 
+LABEL org.opencontainers.image.source="https://github.com/bakatrouble/bakanotifier"
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["/app/bakanotifier", "healthcheck", "--address", "127.0.0.1:8080"]
 

@@ -318,6 +318,32 @@ curl -H "Authorization: Bearer change-me" \
   http://localhost:8080/notify
 ```
 
+### Custom endpoints
+
+`[[endpoints]]` entries in the TOML file add POST routes with a fixed template and
+chat. The whole request body is the template `values`, so callers do not send
+`template` or `chat_id`:
+
+```toml
+[[endpoints]]
+path = "/docker-updates"
+template = "docker-updates"
+chat_id = 42          # optional; defaults to default_chat_id
+```
+
+```sh
+curl -X POST http://localhost:8080/docker-updates \
+  -H "Authorization: Bearer change-me" \
+  -H "Content-Type: application/yaml" \
+  --data-binary 'updates: []'
+```
+
+Endpoints use the same bearer auth, Content-Type handling and body limit as
+`/notify`. The body must be an object. `path` must start with `/`, must not contain
+`{`, `}`, `*`, `:`, `?` or `#`, must not end in `/`, and must not be `/notify` or
+`/health`. The template must exist in `templates_dir` when the service starts.
+Endpoints are TOML-only; they cannot be set through environment variables or flags.
+
 ## Rich templates
 
 Rich templates live in `templates_dir/<name>.yaml` (`.yml` is also accepted) and
