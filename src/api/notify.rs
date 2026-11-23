@@ -89,11 +89,8 @@ pub(super) async fn notify(
             return error_response(StatusCode::BAD_REQUEST, rejection.body_text());
         }
     };
-    let source = match std::str::from_utf8(&bytes) {
-        Ok(source) => source,
-        Err(_) => {
-            return error_response(StatusCode::BAD_REQUEST, "request body is not valid UTF-8");
-        }
+    let Ok(source) = std::str::from_utf8(&bytes) else {
+        return error_response(StatusCode::BAD_REQUEST, "request body is not valid UTF-8");
     };
     let parsed = match format {
         BodyFormat::Json => parse_json_value(source),

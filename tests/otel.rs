@@ -120,6 +120,99 @@ fn attr_i64(span: &SpanData, key: &str) -> Option<i64> {
     }
 }
 
+fn assert_span_tree(spans: &[SpanData]) {
+    let by_name = |name: &str| {
+        spans
+            .iter()
+            .find(|span| span.name.as_ref() == name)
+            .unwrap_or_else(|| panic!("missing span {name}; got {:?}", names(spans)))
+    };
+
+    let http = by_name("http.server");
+    assert_eq!(http.span_kind, opentelemetry::trace::SpanKind::Server);
+    assert_eq!(
+        http.span_context.trace_id(),
+        TraceId::from_hex(TRACE_ID).unwrap()
+    );
+    assert_eq!(
+        http.parent_span_id,
+        SpanId::from_hex(PARENT_SPAN_ID).unwrap()
+    );
+    assert!(http.parent_span_is_remote);
+    assert_eq!(attr_str(http, "http.request.method"), Some("POST"));
+    assert_eq!(attr_str(http, "http.route"), Some("/notify"));
+    assert_eq!(attr_i64(http, "http.response.status_code"), Some(200));
+
+    let notify = by_name("notify");
+    assert_eq!(notify.parent_span_id, http.span_context.span_id());
+    assert_eq!(attr_i64(notify, "chat_id"), Some(77));
+    assert_eq!(attr_str(notify, "template"), Some("example"));
+
+    let render = by_name("template.render");
+    assert_eq!(render.parent_span_id, notify.span_context.span_id());
+    assert_eq!(attr_str(render, "template"), Some("example"));
+    assert!(!matches!(render.status, Status::Error { .. }));
+
+    let telegram = by_name("telegram.send_rich_message");
+    assert_eq!(telegram.parent_span_id, notify.span_context.span_id());
+    assert_eq!(attr_i64(telegram, "chat_id"), Some(77));
+    assert!(!matches!(telegram.status, Status::Error { .. }));
+}
+
+fn assert_no_sensitive_attributes(spans: &[SpanData]) {
+    for span in spans {
+        for attribute in &span.attributes {
+            let rendered = format!("{:?}", attribute.value);
+            assert!(
+                !rendered.contains(MESSAGE_MARKER),
+                "span {} leaked message text in attribute {}",
+                span.name,
+                attribute.key
+            );
+            assert!(
+                !rendered.contains("sda 97%"),
+                "span {} leaked template values in attribute {}",
+                span.name,
+                attribute.key
+            );
+            assert!(
+                !rendered.contains(BOT_TOKEN),
+                "span {} leaked the bot token in attribute {}",
+                span.name,
+                attribute.key
+            );
+            assert!(
+                !rendered.contains(API_SECRET),
+                "span {} leaked an api secret in attribute {}",
+                span.name,
+                attribute.key
+            );
+        }
+    }
+}
+
+fn assert_failed_spans(spans: &[SpanData]) {
+    let failed_notify = spans
+        .iter()
+        .find(|span| {
+            span.name.as_ref() == "notify" && attr_str(span, "template") == Some("missing-template")
+        })
+        .expect("failed notify span should be exported");
+    assert!(
+        matches!(failed_notify.status, Status::Error { .. }),
+        "failed notify span should be marked as an error"
+    );
+
+    let failed_render = spans
+        .iter()
+        .find(|span| {
+            span.name.as_ref() == "template.render"
+                && attr_str(span, "template") == Some("missing-template")
+        })
+        .expect("failed template span should be exported");
+    assert!(matches!(failed_render.status, Status::Error { .. }));
+}
+
 #[tokio::test]
 async fn notify_emits_expected_spans_without_message_text() {
     let exporter = InMemorySpanExporter::default();
@@ -154,72 +247,8 @@ async fn notify_emits_expected_spans_without_message_text() {
     let spans = exporter
         .get_finished_spans()
         .expect("spans should be exported");
-    let by_name = |name: &str| {
-        spans
-            .iter()
-            .find(|span| span.name.as_ref() == name)
-            .unwrap_or_else(|| panic!("missing span {name}; got {:?}", names(&spans)))
-    };
-
-    let http = by_name("http.server");
-    assert_eq!(http.span_kind, opentelemetry::trace::SpanKind::Server);
-    assert_eq!(
-        http.span_context.trace_id(),
-        TraceId::from_hex(TRACE_ID).unwrap()
-    );
-    assert_eq!(
-        http.parent_span_id,
-        SpanId::from_hex(PARENT_SPAN_ID).unwrap()
-    );
-    assert!(http.parent_span_is_remote);
-    assert_eq!(attr_str(http, "http.request.method"), Some("POST"));
-    assert_eq!(attr_str(http, "http.route"), Some("/notify"));
-    assert_eq!(attr_i64(http, "http.response.status_code"), Some(200));
-
-    let notify = by_name("notify");
-    assert_eq!(notify.parent_span_id, http.span_context.span_id());
-    assert_eq!(attr_i64(notify, "chat_id"), Some(77));
-    assert_eq!(attr_str(notify, "template"), Some("example"));
-
-    let render = by_name("template.render");
-    assert_eq!(render.parent_span_id, notify.span_context.span_id());
-    assert_eq!(attr_str(render, "template"), Some("example"));
-    assert!(!matches!(render.status, Status::Error { .. }));
-
-    let telegram = by_name("telegram.send_rich_message");
-    assert_eq!(telegram.parent_span_id, notify.span_context.span_id());
-    assert_eq!(attr_i64(telegram, "chat_id"), Some(77));
-    assert!(!matches!(telegram.status, Status::Error { .. }));
-
-    for span in &spans {
-        for attribute in &span.attributes {
-            let rendered = format!("{:?}", attribute.value);
-            assert!(
-                !rendered.contains(MESSAGE_MARKER),
-                "span {} leaked message text in attribute {}",
-                span.name,
-                attribute.key
-            );
-            assert!(
-                !rendered.contains("sda 97%"),
-                "span {} leaked template values in attribute {}",
-                span.name,
-                attribute.key
-            );
-            assert!(
-                !rendered.contains(BOT_TOKEN),
-                "span {} leaked the bot token in attribute {}",
-                span.name,
-                attribute.key
-            );
-            assert!(
-                !rendered.contains(API_SECRET),
-                "span {} leaked an api secret in attribute {}",
-                span.name,
-                attribute.key
-            );
-        }
-    }
+    assert_span_tree(&spans);
+    assert_no_sensitive_attributes(&spans);
 
     let (status, body) =
         post_notify(&app, json!({"chat_id": 77, "template": "missing-template"})).await;
@@ -228,25 +257,7 @@ async fn notify_emits_expected_spans_without_message_text() {
     let spans = exporter
         .get_finished_spans()
         .expect("spans should be exported");
-    let failed_notify = spans
-        .iter()
-        .find(|span| {
-            span.name.as_ref() == "notify" && attr_str(span, "template") == Some("missing-template")
-        })
-        .expect("failed notify span should be exported");
-    assert!(
-        matches!(failed_notify.status, Status::Error { .. }),
-        "failed notify span should be marked as an error"
-    );
-
-    let failed_render = spans
-        .iter()
-        .find(|span| {
-            span.name.as_ref() == "template.render"
-                && attr_str(span, "template") == Some("missing-template")
-        })
-        .expect("failed template span should be exported");
-    assert!(matches!(failed_render.status, Status::Error { .. }));
+    assert_failed_spans(&spans);
 }
 
 fn names(spans: &[SpanData]) -> Vec<String> {

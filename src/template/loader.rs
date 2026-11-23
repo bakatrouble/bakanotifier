@@ -21,11 +21,11 @@ pub fn load_raw(templates_dir: &Path, name: &str) -> Result<String, TemplateErro
         )));
     }
     let yaml = templates_dir.join(format!("{name}.yaml"));
-    let yml = templates_dir.join(format!("{name}.yml"));
+    let yml_path = templates_dir.join(format!("{name}.yml"));
     let path = if yaml.is_file() {
         yaml
-    } else if yml.is_file() {
-        yml
+    } else if yml_path.is_file() {
+        yml_path
     } else {
         return Err(TemplateError::NotFound);
     };

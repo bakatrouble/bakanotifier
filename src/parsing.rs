@@ -15,7 +15,8 @@ pub fn parse_json_value(source: &str) -> Result<Value, String> {
 /// (`yes`/`on` stay strings), and null is not converted to a string. Tags and
 /// mapping keys are coerced to strings by serde_json.
 pub fn parse_yaml_value(source: &str) -> Result<Value, String> {
-    serde_saphyr::from_str_with_options(source, yaml_options()).map_err(format_yaml_error)
+    serde_saphyr::from_str_with_options(source, yaml_options())
+        .map_err(|error| format_yaml_error(&error))
 }
 
 fn yaml_options() -> serde_saphyr::Options {
@@ -30,7 +31,7 @@ fn yaml_options() -> serde_saphyr::Options {
     }
 }
 
-fn format_yaml_error(error: serde_saphyr::Error) -> String {
+fn format_yaml_error(error: &serde_saphyr::Error) -> String {
     let message = error.to_string();
     if message.contains("unsupported tag") {
         format!("unsupported YAML tag: {message}")

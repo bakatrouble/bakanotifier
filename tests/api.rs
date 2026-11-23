@@ -181,19 +181,15 @@ async fn send_request(app: &Router, request: Request<axum::body::Body>) -> (Stat
     )
 }
 
-#[tokio::test]
-async fn end_to_end_against_mock_telegram() {
-    let (api_url, mock, mock_task) = start_mock_telegram().await;
-    let app = build_app(test_config(api_url));
-
-    let (status, body) = get_json(&app, "/health").await;
+async fn check_auth_and_health(app: &Router, mock: &MockState) {
+    let (status, body) = get_json(app, "/health").await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
     assert_eq!(body["status"], "starting");
     assert_eq!(body["telegram"]["reachable"], false);
     assert_eq!(mock.get_me_calls.load(Ordering::SeqCst), 0);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         None,
         json!({"chat_id": 1, "template": "text", "values": {"message": "hello"}}),
     )
@@ -202,16 +198,18 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(body["ok"], false);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some("wrong"),
         json!({"chat_id": 1, "template": "text", "values": {"message": "hello"}}),
     )
     .await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert_eq!(body["ok"], false);
+}
 
+async fn check_text_modes(app: &Router, mock: &MockState) {
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 123, "template": "text", "values": {"message": "hello"}}),
     )
@@ -230,7 +228,7 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 123, "template": "html", "values": {"message": "<b>hello</b>"}}),
     )
@@ -244,7 +242,7 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 123, "template": "markdown", "values": {"message": "**hello**"}}),
     )
@@ -256,18 +254,16 @@ async fn end_to_end_against_mock_telegram() {
         assert_eq!(last["text"], "**hello**");
         assert_eq!(last["parse_mode"], "MarkdownV2");
     }
+}
 
+async fn check_rich_templates(app: &Router, mock: &MockState) {
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({
             "chat_id": 123,
             "template": "example",
-            "values": {
-                "title": "Deploy failed",
-                "items": ["api", "worker"],
-                "urgent": true
-            }
+            "values": {"title": "Deploy failed", "items": ["api", "worker"], "urgent": true}
         }),
     )
     .await;
@@ -284,17 +280,12 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({
             "chat_id": 123,
             "template": "deploy",
-            "values": {
-                "failed": true,
-                "service": "api",
-                "version": "1.0",
-                "reason": "timeout"
-            }
+            "values": {"failed": true, "service": "api", "version": "1.0", "reason": "timeout"}
         }),
     )
     .await;
@@ -309,17 +300,12 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({
             "chat_id": 123,
             "template": "rich-markdown-kitchen-sink",
-            "values": {
-                "title": "Markdown kitchen sink",
-                "items": ["alpha", "beta"],
-                "note": "A note",
-                "skip_entity_detection": true
-            }
+            "values": {"title": "Markdown kitchen sink", "items": ["alpha", "beta"], "note": "A note", "skip_entity_detection": true}
         }),
     )
     .await;
@@ -336,16 +322,12 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({
             "chat_id": 123,
             "template": "rich-blocks-example",
-            "values": {
-                "title": "Rich blocks example",
-                "items": ["first item", "second item"],
-                "footer": "Generated from JSON-e"
-            }
+            "values": {"title": "Rich blocks example", "items": ["first item", "second item"], "footer": "Generated from JSON-e"}
         }),
     )
     .await;
@@ -364,9 +346,11 @@ async fn end_to_end_against_mock_telegram() {
         assert!(last["rich_message"].get("html").is_none());
         assert!(last["rich_message"].get("markdown").is_none());
     }
+}
 
+async fn check_yaml_bodies(app: &Router, mock: &MockState) {
     let (status, body) = post_raw(
-        &app,
+        app,
         Some(API_SECRET),
         Some("application/yaml"),
         "chat_id: 123\ntemplate: text\nvalues:\n  message: hello\n",
@@ -380,7 +364,7 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_raw(
-        &app,
+        app,
         Some(API_SECRET),
         Some("application/yaml"),
         "chat_id: 123\ntemplate: example\nvalues:\n  title: &title Disk alert\n  items: [*title, \"sdb 12%\"]\n  urgent: true\n",
@@ -397,7 +381,7 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_raw(
-        &app,
+        app,
         Some(API_SECRET),
         Some("application/yaml"),
         "chat_id: 123\ntemplate: text\nvalues:\n  message: yes\n",
@@ -410,7 +394,7 @@ async fn end_to_end_against_mock_telegram() {
     }
 
     let (status, body) = post_raw(
-        &app,
+        app,
         Some(API_SECRET),
         Some("application/yaml"),
         "chat_id: 1\ntemplate: text\nvalues: !custom\n  message: hello\n",
@@ -419,7 +403,7 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(status, StatusCode::BAD_REQUEST, "body: {body}");
 
     let (status, body) = post_raw(
-        &app,
+        app,
         Some(API_SECRET),
         Some("text/plain"),
         "{\"chat_id\": 1, \"template\": \"text\"}",
@@ -428,16 +412,18 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(status, StatusCode::UNSUPPORTED_MEDIA_TYPE, "body: {body}");
 
     let (status, body) = post_raw(
-        &app,
+        app,
         Some(API_SECRET),
         None,
         "{\"chat_id\": 1, \"template\": \"text\"}",
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST, "body: {body}");
+}
 
+async fn check_bad_requests(app: &Router) {
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "does-not-exist"}),
     )
@@ -446,12 +432,12 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(body["ok"], false);
 
     let (status, body) =
-        post_notify(&app, Some(API_SECRET), json!({"chat_id": 1, "values": {}})).await;
+        post_notify(app, Some(API_SECRET), json!({"chat_id": 1, "values": {}})).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["ok"], false);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "text", "values": {}}),
     )
@@ -465,7 +451,7 @@ async fn end_to_end_against_mock_telegram() {
     );
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "text", "values": {"message": 42}}),
     )
@@ -474,7 +460,7 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(body["ok"], false);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "text", "values": {"message": "hello", "extra": true}}),
     )
@@ -482,17 +468,12 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["ok"], false);
 
-    let (status, body) = post_notify(
-        &app,
-        Some(API_SECRET),
-        json!({"chat_id": 1, "template": "text", "values": {"message": "hello"}, "parse_mode": "text"}),
-    )
-    .await;
+    let (status, body) = post_notify(app, Some(API_SECRET), json!({"chat_id": 1, "template": "text", "values": {"message": "hello"}, "parse_mode": "text"})).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["ok"], false);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "text", "message": "hello"}),
     )
@@ -501,7 +482,7 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(body["ok"], false);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "../example"}),
     )
@@ -510,13 +491,25 @@ async fn end_to_end_against_mock_telegram() {
     assert_eq!(body["ok"], false);
 
     let (status, body) = post_notify(
-        &app,
+        app,
         Some(API_SECRET),
         json!({"chat_id": 1, "template": "example", "values": [1, 2]}),
     )
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["ok"], false);
+}
+
+#[tokio::test]
+async fn end_to_end_against_mock_telegram() {
+    let (api_url, mock, mock_task) = start_mock_telegram().await;
+    let app = build_app(test_config(api_url));
+
+    check_auth_and_health(&app, &mock).await;
+    check_text_modes(&app, &mock).await;
+    check_rich_templates(&app, &mock).await;
+    check_yaml_bodies(&app, &mock).await;
+    check_bad_requests(&app).await;
 
     mock_task.abort();
 }

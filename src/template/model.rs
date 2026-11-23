@@ -72,8 +72,10 @@ impl RenderedMessage {
                 }
             }
             Self::Rich(rich_message) => {
-                payload["rich_message"] =
-                    serde_json::to_value(rich_message).expect("rich message should serialize");
+                payload["rich_message"] = match serde_json::to_value(rich_message) {
+                    Ok(value) => value,
+                    Err(_) => Value::Null,
+                };
             }
         }
         payload

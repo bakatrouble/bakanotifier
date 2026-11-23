@@ -29,6 +29,10 @@ fn request(value: Value) -> Result<NotifyRequest, serde_json::Error> {
     serde_json::from_value(value)
 }
 
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "test helper keeps json! call sites concise"
+)]
 fn prepare(template: &str, values: Value) -> Result<RenderedMessage, super::error::ApiError> {
     let request = request(json!({
         "chat_id": 1,

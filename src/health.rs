@@ -47,7 +47,9 @@ pub async fn poll_bot_health(
         };
         let now = unix_now();
         {
-            let mut health = health.lock().expect("health state lock");
+            let mut health = health
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             health.last_checked = Some(now);
             match result {
                 Ok(()) => {
